@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="QuickCal" />
+    <meta name="description" content="选好任务和时间，两步加入 Apple 日历。" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./quickcal-icon-180.png" />
+    <link rel="icon" type="image/svg+xml" href="./quickcal-icon.svg" />
+    <title>QuickCal</title>
+    <link rel="stylesheet" href="./styles.css?v=9" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">QUICKCAL</p>
+          <h1>两步加入 Apple 日历</h1>
+          <p class="hero-copy">选好任务和时间，生成后在系统日历中确认添加。</p>
+        </div>
+        <button class="icon-button" id="jumpToday" aria-label="回到今天" title="回到今天">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1-7.8 4.5M4 3v4h4"/><path d="M12 7v5l3 2"/></svg>
+        </button>
+      </header>
+
+      <section class="panel schedule-panel" aria-labelledby="scheduleTitle">
+        <div class="section-heading">
+          <div>
+            <h2 id="scheduleTitle">当天安排</h2>
+            <p id="scheduleDate"></p>
+          </div>
+          <div class="date-nav" aria-label="切换日期">
+            <button id="previousDay" aria-label="前一天">‹</button>
+            <button id="nextDay" aria-label="后一天">›</button>
+          </div>
+        </div>
+        <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
+      </section>
+
+      <section class="task-section" aria-labelledby="taskTitle">
+        <div class="section-heading compact-heading">
+          <h2 id="taskTitle">任务类型</h2>
+        </div>
+        <div id="presetGrid" class="preset-grid"></div>
+      </section>
+
+      <section class="panel composer" aria-labelledby="composerTitle">
+        <div class="composer-summary">
+          <div>
+            <p class="field-label" id="composerTitle">什么时候开始？</p>
+            <strong id="scheduleSummary"></strong>
+          </div>
+          <span class="duration-badge" id="durationBadge"></span>
+        </div>
+
+        <div class="chip-row" id="dayChips" aria-label="选择日期"></div>
+        <input id="customDate" class="native-date" type="date" aria-label="自定义日期" />
+
+        <div class="all-day-row">
+          <div>
+            <strong>全天任务</strong>
+            <span>固定显示在当天安排顶部</span>
+          </div>
+          <label class="switch">
+            <input id="allDayToggle" type="checkbox" />
+            <span aria-hidden="true"></span>
+          </label>
+        </div>
+
+        <div id="timeControls">
+          <div class="chip-row quick-times" aria-label="快捷时间">
+            <button data-quick="soon">马上</button>
+            <button data-quick="540">9:00</button>
+            <button data-quick="840">14:00</button>
+            <button data-quick="1140">19:00</button>
+          </div>
+
+          <div class="time-title-row">
+            <span class="field-label">拖动选择时间</span>
+            <div class="time-stepper">
+              <button id="minusTime" aria-label="提前 15 分钟">−</button>
+              <output id="timeOutput" for="timeSlider"></output>
+              <button id="plusTime" aria-label="推后 15 分钟">＋</button>
+            </div>
+          </div>
+          <input id="timeSlider" class="time-slider" type="range" step="15" aria-label="开始时间" />
+          <div id="timeAxis" class="time-axis" aria-hidden="true"></div>
+
+          <div class="duration-row">
+            <span class="field-label">持续</span>
+            <div id="durationChips" class="chip-row"></div>
+          </div>
+        </div>
+
+        <label class="title-input">
+          <span class="sr-only">日程名称</span>
+          <input id="taskName" type="text" maxlength="60" placeholder="日程名称" autocomplete="off" />
+        </label>
+      </section>
+
+      <button class="primary-action calendar-action" id="addTask">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M7 11h4M9 9v4"/></svg>
+        <span id="addTaskLabel">加入 Apple 日历</span>
+      </button>
+      <div class="calendar-progress" id="calendarProgress" hidden role="status" aria-live="assertive">
+        <span class="progress-check" aria-hidden="true">✓</span>
+        <span><strong>日程已准备好</strong><small>正在打开 Apple 日历</small></span>
+      </div>
+      <ol class="calendar-steps" id="calendarSteps" aria-label="加入日历步骤">
+        <li><span>1</span>点上方按钮</li>
+        <li><span>2</span>QuickCal 自动加入 Apple 日历</li>
+      </ol>
+      <p class="local-note">只有 QuickCal-Calendar 确认日程已写入后，QuickCal 才会显示成功并保存任务。</p>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="sheet-backdrop" id="typeSheet" hidden>
+      <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="typeSheetTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-heading">
+          <h2 id="typeSheetTitle">新任务类型</h2>
+          <button class="close-sheet" data-close="typeSheet" aria-label="关闭">×</button>
+        </div>
+        <label class="stacked-field">名称<input id="newTypeName" maxlength="16" placeholder="例如：散步" /></label>
+        <div class="stacked-field"><span>图标</span><div id="iconPicker" class="icon-picker"></div></div>
+        <div class="stacked-field"><span>颜色</span><div id="colorPicker" class="color-picker"></div></div>
+        <div class="stacked-field"><span>默认时长</span><div id="newTypeDurations" class="chip-row"></div></div>
+        <button id="saveType" class="primary-action sheet-action">保存任务类型</button>
+      </section>
+    </div>
+
+    <div class="sheet-backdrop" id="eventSheet" hidden>
+      <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="eventSheetTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-heading">
+          <div><p class="eyebrow">任务详情</p><h2 id="eventSheetTitle">修改安排</h2></div>
+          <button class="close-sheet" data-close="eventSheet" aria-label="关闭">×</button>
+        </div>
+        <label class="stacked-field">名称<input id="editName" maxlength="60" /></label>
+        <label class="stacked-field">日期<input id="editDate" type="date" /></label>
+        <div class="edit-grid">
+          <label class="stacked-field">开始时间<input id="editTime" type="time" step="900" /></label>
+          <label class="stacked-field">持续时间
+            <select id="editDuration"><option>30</option><option>45</option><option>60</option><option>90</option><option>120</option></select>
+          </label>
+        </div>
+        <label class="all-day-edit"><input id="editAllDay" type="checkbox" /> 全天任务</label>
+        <div class="sheet-actions">
+          <button id="exportEvent" class="secondary-action">添加到 Apple 日历</button>
+          <button id="saveEvent" class="primary-action sheet-action">保存修改</button>
+          <button id="deleteEvent" class="danger-action">删除任务</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./app.js?v=9"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "QuickCal",
+  "short_name": "QuickCal",
+  "description": "选好任务和时间，两步加入 Apple 日历。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "icons": [
+    { "src": "./quickcal-icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "./quickcal-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
