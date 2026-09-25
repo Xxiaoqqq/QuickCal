@@ -31,6 +31,7 @@ assert.doesNotMatch(indexSource, /选择后自动带入时长/);
 assert.match(indexSource, /id="calendarSetup"/);
 assert.match(indexSource, /href="\.\/install-shortcut\.html"/);
 assert.match(indexSource, /id="shortcutInstalled"/);
+assert.match(indexSource, />安装或更新快捷指令<\/a>/);
 assert.match(indexSource, /app\.js\?v=11/);
 assert.match(indexSource, /styles\.css\?v=10/);
 assert.doesNotMatch(indexSource, /app\.js\?v=9/);
