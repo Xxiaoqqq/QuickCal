@@ -4,6 +4,7 @@
   const STORAGE_KEY = "quickcal.web.v1";
   const CALENDAR_SHORTCUT_NAME = "QuickCal-Calendar";
   const CALENDAR_PENDING_KEY = "quickcal.calendar.pending.v2";
+  const CALENDAR_SHORTCUT_READY_KEY = "quickcal.calendar.shortcut-ready.v1";
   const DURATIONS = [30, 45, 60, 90, 120];
   const CUSTOM_COLORS = ["#ff453a", "#ff2d55", "#5e5ce6", "#30b0c7", "#a2845e", "#ffd60a"];
   const ICONS = {
@@ -94,6 +95,7 @@
   let toastTimer;
   let calendarLaunchPending = false;
   let shortcutWasHidden = false;
+  let shortcutLaunchTimer;
 
   function saveStore() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
@@ -403,9 +405,48 @@
       || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   }
 
+  function isShortcutReady() {
+    return localStorage.getItem(CALENDAR_SHORTCUT_READY_KEY) === "1";
+  }
+
+  function setShortcutReady(ready) {
+    if (ready) localStorage.setItem(CALENDAR_SHORTCUT_READY_KEY, "1");
+    else localStorage.removeItem(CALENDAR_SHORTCUT_READY_KEY);
+  }
+
+  function showShortcutSetup(mode = "first", options = {}) {
+    if (!isIOSDevice()) return;
+    const repair = mode === "repair";
+    const setup = $("#calendarSetup");
+    $("#calendarSetupEyebrow").textContent = repair ? "快捷指令需要更新" : "IPHONE 首次设置 · 约 20 秒";
+    $("#calendarSetupTitle").textContent = repair ? "重新安装最新版快捷指令" : "先安装一次 QuickCal 快捷指令";
+    $("#calendarSetupDescription").textContent = repair
+      ? "检测到旧版、同名冲突或没有收到写入回执。删除旧的 QuickCal-Calendar，再安装下方最新版即可。"
+      : "它负责把这里的标题和时间直接写入你的 Apple 日历。安装一次，以后每次只需点“加入 Apple 日历”。";
+    setup.hidden = false;
+    if (options.scroll) setup.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function hideShortcutSetup() {
+    $("#calendarSetup").hidden = true;
+  }
+
+  function confirmShortcutInstalled() {
+    setShortcutReady(true);
+    hideShortcutSetup();
+    showToast("设置完成，现在可以一键加入日历");
+    $(".composer").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function exportEditedEvent() {
     const task = store.tasks.find((item) => item.id === editingTaskId);
     if (!task || calendarLaunchPending) return;
+    if (isIOSDevice() && !isShortcutReady()) {
+      closeSheet("eventSheet");
+      showShortcutSetup("first", { scroll: true });
+      showToast("首次使用先安装一次快捷指令");
+      return;
+    }
     calendarLaunchPending = true;
     closeSheet("eventSheet");
     setCalendarActionState("loading");
@@ -434,6 +475,11 @@
 
   function addTaskToCalendar() {
     if (calendarLaunchPending) return;
+    if (isIOSDevice() && !isShortcutReady()) {
+      showShortcutSetup("first", { scroll: true });
+      showToast("首次使用先安装一次快捷指令");
+      return;
+    }
     try {
       const task = buildTask();
       calendarLaunchPending = true;
@@ -459,6 +505,7 @@
   }
 
   function resetCalendarAction() {
+    clearTimeout(shortcutLaunchTimer);
     calendarLaunchPending = false;
     setCalendarActionState("idle");
   }
@@ -505,6 +552,14 @@
       "x-error": callbackURL("error", requestId)
     });
     window.location.href = `shortcuts://x-callback-url/run-shortcut?${params.toString()}`;
+    clearTimeout(shortcutLaunchTimer);
+    shortcutLaunchTimer = setTimeout(() => {
+      if (!calendarLaunchPending || document.visibilityState !== "visible" || shortcutWasHidden) return;
+      setShortcutReady(false);
+      resetCalendarAction();
+      showShortcutSetup("repair", { scroll: true });
+      showToast("没有打开快捷指令，请安装或更新后重试");
+    }, 1800);
   }
 
   function downloadCalendarFile(task, startDate, endDate) {
@@ -562,6 +617,10 @@
     $("#saveEvent").addEventListener("click", saveEditedEvent);
     $("#deleteEvent").addEventListener("click", deleteEditedEvent);
     $("#exportEvent").addEventListener("click", exportEditedEvent);
+    $("#shortcutInstalled").addEventListener("click", confirmShortcutInstalled);
+    $("#installShortcut").addEventListener("click", () => {
+      $("#calendarSetupDescription").textContent = "在打开的安装页点“添加快捷指令”。完成后回到 QuickCal，再点“我已完成安装”。";
+    });
     $$('[data-close]').forEach((button) => button.addEventListener("click", () => closeSheet(button.dataset.close)));
     $$(".sheet-backdrop").forEach((backdrop) => backdrop.addEventListener("click", (event) => { if (event.target === backdrop) closeSheet(backdrop.id); }));
     document.addEventListener("keydown", (event) => {
@@ -624,29 +683,44 @@
     localStorage.removeItem(CALENDAR_PENDING_KEY);
     if (result === "success") {
       if (shortcutOutput !== pending.expectedReceipt) {
+        setShortcutReady(false);
         restoreComposer(pending.task);
-        setTimeout(() => showToast("快捷指令已结束，但未确认写入日历；任务内容已保留"), 80);
+        setTimeout(() => {
+          showShortcutSetup("repair", { scroll: true });
+          showToast("检测到旧版快捷指令，请重新安装最新版");
+        }, 80);
         return;
       }
+      setShortcutReady(true);
+      hideShortcutSetup();
       if (pending.commitOnSuccess) commitTask(pending.task, { silent: true });
       setTimeout(() => showToast("已确认加入 Apple 日历"), 80);
       return;
     }
 
     restoreComposer(pending.task);
-    setTimeout(() => showToast(result === "cancel" ? "已取消，任务内容已保留" : "添加失败，请检查快捷指令后重试"), 80);
+    setTimeout(() => {
+      if (result === "error") {
+        setShortcutReady(false);
+        showShortcutSetup("repair", { scroll: true });
+      }
+      showToast(result === "cancel" ? "已取消，任务内容已保留" : "添加失败，请更新快捷指令后重试");
+    }, 80);
   }
 
   function handleUnconfirmedShortcutReturn() {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden" && calendarLaunchPending) {
+        clearTimeout(shortcutLaunchTimer);
         shortcutWasHidden = true;
         return;
       }
       if (document.visibilityState !== "visible" || !calendarLaunchPending || !shortcutWasHidden) return;
       shortcutWasHidden = false;
+      setShortcutReady(false);
       resetCalendarAction();
-      showToast("未收到快捷指令结果；如日历中没有日程，请再试一次");
+      showShortcutSetup("repair", { scroll: true });
+      showToast("未收到写入结果，请重新安装最新版快捷指令");
     });
   }
 
@@ -694,5 +768,6 @@
   renderTypeChoices();
   registerWebMCP();
   handleCalendarReturn();
+  if (isIOSDevice() && !isShortcutReady()) showShortcutSetup();
   handleUnconfirmedShortcutReturn();
 })();

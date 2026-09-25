@@ -15,6 +15,10 @@ function serveAsset(pathname, requestMethod) {
     "cache-control": path === "/index.html" ? "no-cache" : "public, max-age=300",
     "x-content-type-options": "nosniff"
   });
+  if (path.endsWith(".shortcut")) {
+    headers.set("content-disposition", 'attachment; filename="QuickCal-Calendar.shortcut"');
+    headers.set("cache-control", "no-store");
+  }
   return new Response(requestMethod === "HEAD" ? null : decodeBase64(asset.body), { headers });
 }
 

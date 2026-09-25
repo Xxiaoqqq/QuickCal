@@ -17,6 +17,9 @@ assert.match(appSource, /placeholder = preset\.title/);
 assert.match(appSource, /input\.title \|\| \$\("#taskName"\)\.value \|\| preset\.title/);
 assert.match(appSource, /class="preset-icon"/);
 assert.match(appSource, /class="preset-copy"/);
+assert.match(appSource, /CALENDAR_SHORTCUT_READY_KEY/);
+assert.match(appSource, /showShortcutSetup\("repair"/);
+assert.match(appSource, /检测到旧版快捷指令，请重新安装最新版/);
 for (const title of ["工作", "学习", "会议", "运动", "个人事务"]) assert.match(appSource, new RegExp(`title: "${title}"`));
 for (const title of ["搓&学习产品", "作业", "听播客"]) assert.doesNotMatch(appSource, new RegExp(`title: "${title}"`));
 
@@ -24,8 +27,13 @@ const indexSource = await readFile(new URL("../site/index.html", import.meta.url
 assert.match(indexSource, /加入 Apple 日历/);
 assert.match(indexSource, /QuickCal-Calendar/);
 assert.doesNotMatch(indexSource, /选择后自动带入时长/);
-assert.match(indexSource, /app\.js\?v=9/);
-assert.match(indexSource, /styles\.css\?v=9/);
+assert.match(indexSource, /id="calendarSetup"/);
+assert.match(indexSource, /href="\.\/QuickCal-Calendar\.shortcut"/);
+assert.match(indexSource, /id="shortcutInstalled"/);
+assert.match(indexSource, /app\.js\?v=10/);
+assert.match(indexSource, /styles\.css\?v=10/);
+assert.doesNotMatch(indexSource, /app\.js\?v=9/);
+assert.doesNotMatch(indexSource, /styles\.css\?v=9/);
 
 const worker = (await import("../dist/server/index.js")).default;
 
@@ -37,6 +45,20 @@ assert.match(await page.text(), /两步加入 Apple 日历/);
 const stylesheet = await worker.fetch(new Request("https://quickcal.test/styles.css"), {}, {});
 assert.equal(stylesheet.status, 200);
 assert.match(stylesheet.headers.get("content-type"), /text\/css/);
+
+const shortcut = await worker.fetch(new Request("https://quickcal.test/QuickCal-Calendar.shortcut"), {}, {});
+assert.equal(shortcut.status, 200);
+assert.equal(shortcut.headers.get("content-type"), "application/octet-stream");
+assert.equal(shortcut.headers.get("content-disposition"), 'attachment; filename="QuickCal-Calendar.shortcut"');
+assert.equal(shortcut.headers.get("cache-control"), "no-store");
+const shortcutBytes = new Uint8Array(await shortcut.arrayBuffer());
+assert.ok(shortcutBytes.length > 10000, "signed shortcut should not be empty");
+assert.equal(new TextDecoder().decode(shortcutBytes.slice(0, 4)), "AEA1", "shortcut must be Apple-signed");
+
+for (const legacyPath of ["/QuickCalCalendarV2.shortcut", "/QuickCalCalendarV3.shortcut"]) {
+  const legacyShortcut = await worker.fetch(new Request(`https://quickcal.test${legacyPath}`), {}, {});
+  assert.equal(legacyShortcut.status, 404, `${legacyPath} must not be published`);
+}
 
 const form = new FormData();
 form.set("title", "测试日程");

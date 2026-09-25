@@ -21,7 +21,7 @@ QuickCal 是一个面向 Apple 用户的轻量日程工具：选择任务类型�
 
 [打开 QuickCal](https://quickcal-family.guoxiaoqing2003.chatgpt.site/)
 
-> iPhone 首次使用需要安装一次 `QuickCal-Calendar` 快捷指令；安装后即可从 QuickCal 发起日程创建。
+> iPhone 首次使用时，网页会提供最新版 `QuickCal-Calendar` 的安装入口；安装一次后，即可从 QuickCal 一键发起日程创建。若检测到旧版或缺失回执，网页会直接引导重新安装，不会误报成功。
 
 ## 本地运行
 

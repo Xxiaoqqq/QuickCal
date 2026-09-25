@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="./quickcal-icon-180.png" />
     <link rel="icon" type="image/svg+xml" href="./quickcal-icon.svg" />
     <title>QuickCal</title>
-    <link rel="stylesheet" href="./styles.css?v=9" />
+    <link rel="stylesheet" href="./styles.css?v=10" />
   </head>
   <body>
     <main class="app-shell">
@@ -26,6 +26,20 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1-7.8 4.5M4 3v4h4"/><path d="M12 7v5l3 2"/></svg>
         </button>
       </header>
+
+      <section class="calendar-setup" id="calendarSetup" hidden aria-labelledby="calendarSetupTitle">
+        <div class="setup-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M7 11h4M9 9v4"/></svg>
+        </div>
+        <div class="setup-copy">
+          <p class="eyebrow" id="calendarSetupEyebrow">IPHONE 首次设置 · 约 20 秒</p>
+          <h2 id="calendarSetupTitle">先安装一次 QuickCal 快捷指令</h2>
+          <p id="calendarSetupDescription">它负责把这里的标题和时间直接写入你的 Apple 日历。安装一次，以后每次只需点“加入 Apple 日历”。</p>
+        </div>
+        <a class="shortcut-install" id="installShortcut" href="./QuickCal-Calendar.shortcut">1. 安装 QuickCal-Calendar</a>
+        <button class="shortcut-ready" id="shortcutInstalled" type="button">2. 我已完成安装</button>
+        <p class="setup-footnote">安装页应显示完整动作，名称必须是 <strong>QuickCal-Calendar</strong>。如果已有同名旧版，请先删除旧版再安装。</p>
+      </section>
 
       <section class="panel schedule-panel" aria-labelledby="scheduleTitle">
         <div class="section-heading">
@@ -158,6 +172,6 @@
       </section>
     </div>
 
-    <script src="./app.js?v=9"></script>
+    <script src="./app.js?v=10"></script>
   </body>
 </html>

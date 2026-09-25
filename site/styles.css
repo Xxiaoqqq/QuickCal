@@ -222,6 +222,8 @@ h2 { margin-bottom: 0; font-size: 1.05rem; letter-spacing: -.01em; }
 .setup-copy p { margin: 7px 0 0; color: var(--secondary); font-size: .86rem; line-height: 1.5; }
 .shortcut-install { min-height: 50px; margin-top: 15px; display: grid; place-items: center; border-radius: 15px; background: #007aff; color: #fff; font-weight: 760; text-decoration: none; }
 .shortcut-install:active { transform: scale(.985); }
+.shortcut-ready { width: 100%; min-height: 46px; margin-top: 9px; border: 1px solid rgba(0,122,255,.22); border-radius: 15px; background: rgba(0,122,255,.08); color: #007aff; font-weight: 720; cursor: pointer; }
+.shortcut-ready:active { transform: scale(.985); }
 .setup-footnote { margin: 10px 2px 0; color: var(--secondary); font-size: .72rem; line-height: 1.45; }
 .local-note a { color: #007aff; font-weight: 650; text-decoration: none; white-space: nowrap; }
 .calendar-action:active { transform: scale(.985); }

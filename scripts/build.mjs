@@ -18,6 +18,7 @@ const mimeTypes = {
 const assets = {};
 for (const entry of await readdir(siteDirectory, { withFileTypes: true })) {
   if (!entry.isFile()) continue;
+  if (extname(entry.name) === ".shortcut" && entry.name !== "QuickCal-Calendar.shortcut") continue;
   const content = await readFile(new URL(entry.name, siteDirectory));
   assets[`/${entry.name}`] = {
     contentType: mimeTypes[extname(entry.name)] || "application/octet-stream",
