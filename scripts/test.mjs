@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 const appSource = await readFile(new URL("../site/app.js", import.meta.url), "utf8");
@@ -28,12 +29,20 @@ assert.match(indexSource, /加入 Apple 日历/);
 assert.match(indexSource, /QuickCal-Calendar/);
 assert.doesNotMatch(indexSource, /选择后自动带入时长/);
 assert.match(indexSource, /id="calendarSetup"/);
-assert.match(indexSource, /href="\.\/QuickCal-Calendar\.shortcut"/);
+assert.match(indexSource, /href="\.\/install-shortcut\.html"/);
 assert.match(indexSource, /id="shortcutInstalled"/);
-assert.match(indexSource, /app\.js\?v=10/);
+assert.match(indexSource, /app\.js\?v=11/);
 assert.match(indexSource, /styles\.css\?v=10/);
 assert.doesNotMatch(indexSource, /app\.js\?v=9/);
 assert.doesNotMatch(indexSource, /styles\.css\?v=9/);
+
+const installSource = await readFile(new URL("../site/install-shortcut.html", import.meta.url), "utf8");
+assert.match(installSource, /返回 QuickCal/);
+assert.match(installSource, /href="\.\/QuickCal-Calendar\.shortcut"/);
+assert.match(installSource, /target="_blank"/);
+assert.match(installSource, /href="\.\/\?shortcutSetup=done"/);
+assert.match(appSource, /handleShortcutSetupReturn/);
+assert.match(appSource, /searchParams\.get\("shortcutSetup"\)/);
 
 const worker = (await import("../dist/server/index.js")).default;
 
@@ -54,6 +63,11 @@ assert.equal(shortcut.headers.get("cache-control"), "no-store");
 const shortcutBytes = new Uint8Array(await shortcut.arrayBuffer());
 assert.ok(shortcutBytes.length > 10000, "signed shortcut should not be empty");
 assert.equal(new TextDecoder().decode(shortcutBytes.slice(0, 4)), "AEA1", "shortcut must be Apple-signed");
+assert.equal(
+  createHash("sha256").update(shortcutBytes).digest("hex"),
+  "938aa99955ea745f2530b80394e7609ff9db0e19b41c65c22f0709e9eaaa3d1b",
+  "published shortcut must be the user-supplied fixed signed build"
+);
 
 for (const legacyPath of ["/QuickCalCalendarV2.shortcut", "/QuickCalCalendarV3.shortcut"]) {
   const legacyShortcut = await worker.fetch(new Request(`https://quickcal.test${legacyPath}`), {}, {});

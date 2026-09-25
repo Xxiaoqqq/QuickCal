@@ -438,6 +438,15 @@
     $(".composer").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function handleShortcutSetupReturn() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("shortcutSetup") !== "done") return;
+    setShortcutReady(true);
+    url.searchParams.delete("shortcutSetup");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    setTimeout(() => showToast("已返回 QuickCal，现在可以加入日历"), 80);
+  }
+
   function exportEditedEvent() {
     const task = store.tasks.find((item) => item.id === editingTaskId);
     if (!task || calendarLaunchPending) return;
@@ -618,9 +627,6 @@
     $("#deleteEvent").addEventListener("click", deleteEditedEvent);
     $("#exportEvent").addEventListener("click", exportEditedEvent);
     $("#shortcutInstalled").addEventListener("click", confirmShortcutInstalled);
-    $("#installShortcut").addEventListener("click", () => {
-      $("#calendarSetupDescription").textContent = "在打开的安装页点“添加快捷指令”。完成后回到 QuickCal，再点“我已完成安装”。";
-    });
     $$('[data-close]').forEach((button) => button.addEventListener("click", () => closeSheet(button.dataset.close)));
     $$(".sheet-backdrop").forEach((backdrop) => backdrop.addEventListener("click", (event) => { if (event.target === backdrop) closeSheet(backdrop.id); }));
     document.addEventListener("keydown", (event) => {
@@ -767,6 +773,7 @@
   renderAll();
   renderTypeChoices();
   registerWebMCP();
+  handleShortcutSetupReturn();
   handleCalendarReturn();
   if (isIOSDevice() && !isShortcutReady()) showShortcutSetup();
   handleUnconfirmedShortcutReturn();
